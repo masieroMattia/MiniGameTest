@@ -9,40 +9,49 @@ public class OrbitCamera : MonoBehaviour
 {
     #region Public Variables
     [Header("Settings")]
-    [Range(3.0f, 10.0f)]
+    [Range(5.0f, 10.0f)]
     public float targetDistance = 5.0f;
     public Transform target;
     [SerializeField]
-    public Vector3 targetOffset = new Vector3(0.0f, 0.5f, 0.0f);
-    [Range(0.0f, 1.0f)]
-    public float interpolationFactor = 0.5f;
+    public Vector3 targetOffset = new Vector3(0.0f, 1.0f, 0.0f);
+    public float mouseSensitivity = 5.0f;
     #endregion
 
     #region Private Variables
     private Vector3 lookDirection;
-    private Quaternion lookRotation;
 
-    private float maxVerticalAngle = 90.0f;
-    private float minVerticalAngle = -40.0f;
+    private float horizontalAngle = 0.0f;
+    private float verticalAngle = 0.0f;
+
+    private float maxVerticalAngle = 70.0f;
+    private float minVerticalAngle = -30.0f;
+
+    private Vector3 focus;
+    private float nearTargetDistance = 2.0f;
+    private Vector3 nearTargetOffset = new Vector3(0.0f, 2.0f, 0.0f);
     #endregion
-
     #region Lifecycle
-
+    private void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+    }
     void LateUpdate()
     {
-        Vector3 focus = target.position;
-        Vector3 camPosition = transform.position;
+        focus = target.position + targetOffset;
 
-        lookDirection = (focus - camPosition + targetOffset).normalized;
-        lookRotation = Quaternion.LookRotation(lookDirection, Vector3.up);
-        transform.rotation = lookRotation;
+        horizontalAngle += Input.GetAxis("Mouse X") * mouseSensitivity;
+        horizontalAngle = (horizontalAngle + 360) % 360;
 
-        float horizontalMovement = Input.GetAxis("Mouse X");
-        float verticalMovement = Mathf.Clamp(Input.GetAxis("Mouse Y"), minVerticalAngle, maxVerticalAngle);
-        Vector3 nextPosition = new Vector3(camPosition.x + horizontalMovement, camPosition.y + verticalMovement, targetDistance);
+        verticalAngle += Input.GetAxis("Mouse Y") * mouseSensitivity;
+        verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
 
-        transform.position = Vector3.Lerp(camPosition, nextPosition, interpolationFactor);
+        // Debug.Log(verticalAngle);
 
+        lookDirection = Quaternion.AngleAxis(horizontalAngle, Vector3.up) * Quaternion.AngleAxis(verticalAngle,Vector3.right) * Vector3.forward;
+
+        transform.rotation = Quaternion.LookRotation(lookDirection, Vector3.up);
+
+        transform.position = focus - lookDirection * targetDistance;
     }
     #endregion
 }
